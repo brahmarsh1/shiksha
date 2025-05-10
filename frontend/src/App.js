@@ -1,18 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 
 function App() {
   const [file, setFile] = useState(null);
   const [response, setResponse] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunks = useRef([]);
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
-  const handleUpload = async () => {
-    if (!file) return;
+  const handleUpload = async (uploadFile) => {
+    if (!uploadFile) return;
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', uploadFile);
 
     try {
       const res = await axios.post('http://localhost:8000/analyze', formData, {
@@ -24,14 +28,55 @@ function App() {
     }
   };
 
+  const startRecording = async () => {
+    setIsRecording(true);
+    audioChunks.current = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorderRef.current = new MediaRecorder(stream);
+
+    mediaRecorderRef.current.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        audioChunks.current.push(e.data);
+      }
+    };
+
+    mediaRecorderRef.current.onstop = () => {
+      const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
+      setRecordedBlob(audioBlob);
+      setFile(audioBlob);
+    };
+
+    mediaRecorderRef.current.start();
+  };
+
+  const stopRecording = () => {
+    setIsRecording(false);
+    mediaRecorderRef.current.stop();
+  };
+
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>Shiksha</h1>
+      <h1 style={styles.title}>🕉️ Bhagavad Gītā AI</h1>
       <p style={styles.subtitle}>Swara Analyzer for Vedic Chanting</p>
 
       <div style={styles.uploadSection}>
         <input type="file" accept="audio/*" onChange={handleFileChange} style={styles.fileInput} />
-        <button onClick={handleUpload} style={styles.button}>Upload & Analyze</button>
+        <button onClick={() => handleUpload(file)} style={styles.button}>Upload File</button>
+      </div>
+
+      <div style={{ margin: '2rem 0' }}>
+        {!isRecording ? (
+          <button onClick={startRecording} style={styles.button}>🎙️ Start Recording</button>
+        ) : (
+          <button onClick={stopRecording} style={styles.button}>⏹️ Stop Recording</button>
+        )}
+        {recordedBlob && (
+          <div style={{ marginTop: '1rem' }}>
+            <audio controls src={URL.createObjectURL(recordedBlob)} />
+            <br />
+            <button onClick={() => handleUpload(recordedBlob)} style={styles.button}>Upload Recording</button>
+          </div>
+        )}
       </div>
 
       {response && (
