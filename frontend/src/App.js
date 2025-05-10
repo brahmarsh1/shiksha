@@ -56,8 +56,8 @@ function App() {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.title}>🕉️ Bhagavad Gītā AI</h1>
-      <p style={styles.subtitle}>Swara Analyzer for Vedic Chanting</p>
+      <h1 style={styles.title}>Shiksha</h1>
+      <p style={styles.subtitle}>AI Sanskrit Tutor</p>
 
       <div style={styles.uploadSection}>
         <input type="file" accept="audio/*" onChange={handleFileChange} style={styles.fileInput} />
