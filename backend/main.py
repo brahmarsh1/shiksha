@@ -1,12 +1,13 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 import os
 import whisper
+from contextlib import suppress
 
 app = FastAPI(title="Sanskrit Speech-to-Text API")
 
-# Allow frontend running on localhost:3000
+# Enable CORS for local frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -15,24 +16,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Load the Whisper model once at startup
-model = whisper.load_model("base")  # Options: tiny, base, small, medium, large
+# Load Whisper model once at startup
+model = whisper.load_model("base")  # Try "small" or "medium" for better accuracy
 
 @app.post("/transcribe")
-async def transcribe_sanskrit(file: UploadFile = File(...)):
-    # Save uploaded audio to a temporary file
+async def transcribe_sanskrit(
+    file: UploadFile = File(...),
+    lang: str = Query(default=None, description="Set to 'sa' to force Sanskrit transcription")
+):
+    # Save uploaded audio to a temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
         temp_file.write(await file.read())
         temp_path = temp_file.name
 
-    # Transcribe the Sanskrit audio
-    result = model.transcribe(temp_path, language="sa")
+    try:
+        # Transcribe using Whisper with or without language hint
+        if lang == "sa":
+            result = model.transcribe(temp_path, language="sa", fp16=False)
+        else:
+            result = model.transcribe(temp_path, fp16=False)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+    finally:
+        with suppress(Exception):
+            os.remove(temp_path)
 
-    # Clean up
-    os.remove(temp_path)
-
-    return {"text": result["text"]}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    return {"text": result.get("text", "")}

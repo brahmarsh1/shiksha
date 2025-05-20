@@ -3,9 +3,10 @@ import axios from 'axios';
 
 function App() {
   const [file, setFile] = useState(null);
-  const [response, setResponse] = useState(null);
+  const [text, setText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [recordedBlob, setRecordedBlob] = useState(null);
+  const [language, setLanguage] = useState('auto');
   const mediaRecorderRef = useRef(null);
   const audioChunks = useRef([]);
 
@@ -15,14 +16,21 @@ function App() {
 
   const handleUpload = async (uploadFile) => {
     if (!uploadFile) return;
+
     const formData = new FormData();
     formData.append('file', uploadFile);
 
     try {
-      const res = await axios.post('http://localhost:8000/analyze', formData, {
+      const endpoint =
+        language === 'sa'
+          ? 'http://localhost:8000/transcribe?lang=sa'
+          : 'http://localhost:8000/transcribe';
+
+      const res = await axios.post(endpoint, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResponse(res.data);
+
+      setText(res.data.text || '');
     } catch (err) {
       console.error('Upload failed:', err);
     }
@@ -57,7 +65,21 @@ function App() {
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>Shiksha</h1>
-      <p style={styles.subtitle}>AI Sanskrit Tutor</p>
+      <p style={styles.subtitle}>AI Sanskrit Speech-to-Text</p>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <label>
+          <strong>Language:</strong>{' '}
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            style={styles.dropdown}
+          >
+            <option value="auto">Auto Detect</option>
+            <option value="sa">Sanskrit</option>
+          </select>
+        </label>
+      </div>
 
       <div style={styles.uploadSection}>
         <input type="file" accept="audio/*" onChange={handleFileChange} style={styles.fileInput} />
@@ -79,10 +101,10 @@ function App() {
         )}
       </div>
 
-      {response && (
+      {text && (
         <div style={styles.resultBox}>
-          <h3>Analysis Result:</h3>
-          <pre style={styles.pre}>{JSON.stringify(response, null, 2)}</pre>
+          <h3>📝 Transcription:</h3>
+          <p style={styles.transcribedText}>{text}</p>
         </div>
       )}
     </div>
@@ -123,19 +145,25 @@ const styles = {
     border: 'none',
     borderRadius: '6px',
     cursor: 'pointer',
+    marginTop: '0.5rem',
+  },
+  dropdown: {
+    padding: '0.3rem',
+    fontSize: '1rem',
+    marginLeft: '0.5rem',
   },
   resultBox: {
     background: '#fff',
     padding: '1rem',
-    textAlign: 'left',
+    textAlign: 'center',
     borderRadius: '8px',
     boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.1)',
     marginTop: '2rem',
   },
-  pre: {
-    fontSize: '0.9rem',
-    color: '#333',
-    whiteSpace: 'pre-wrap',
+  transcribedText: {
+    fontSize: '1.4rem',
+    color: '#111',
+    marginTop: '1rem',
   },
 };
 
