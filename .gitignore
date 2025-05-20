@@ -1,0 +1,55 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.env.*  # for dotenv files like .env.dev
+
+# macOS specific
+.DS_Store
+
+# Logs and crash reports
+*.log
+
+# Temporary files
+*.swp
+*.swo
+*.bak
+*.tmp
+*.temp
+*.old
+
+# Audio/temp files
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.ogg
+*.opus
+*.aiff
+
+# Whisper model cache (if stored)
+whisper_model/
+.whisper/
+
+# Python metadata
+pip-wheel-metadata/
+build/
+dist/
+*.egg-info/
+*.eggs/
+
+# Jupyter and notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# PyCharm or VSCode config
+.idea/
+.vscode/
+
+# Uvicorn reload artifacts
+*.reload
+backend/venv/
